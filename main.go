@@ -17,6 +17,8 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
+	"github.com/pallat/todoapi/router"
+	"github.com/pallat/todoapi/store"
 	"github.com/pallat/todoapi/todo"
 )
 
@@ -63,10 +65,10 @@ func main() {
 		})
 	})
 
-	gormStore := todo.NewGormStore(db)
+	gormStore := store.NewGormStore(db)
 
 	handler := todo.NewTodoHandler(gormStore)
-	r.POST("/todos", todo.NewGinHandler(handler.NewTask))
+	r.POST("/todos", router.NewGinHandler(handler.NewTask))
 	// r.GET("/todos", handler.List)
 	// r.DELETE("/todos/:id", handler.Remove)
 
