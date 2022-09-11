@@ -26,7 +26,7 @@ var (
 )
 
 func main() {
-	err = godotenv.Load("local.env")
+	err := godotenv.Load("local.env")
 	if err != nil {
 		log.Printf("please consider environment variables: %s\n", err)
 	}
@@ -36,8 +36,8 @@ func main() {
 		panic("failed to connect database")
 	}
 
-	if err :=db.AutoMigrate(&todo.Todo{});err != nil {
-		log.Println("auto migrate db",err)
+	if err := db.AutoMigrate(&todo.Todo{}); err != nil {
+		log.Println("auto migrate db", err)
 	}
 
 	r := gin.Default()
@@ -63,11 +63,12 @@ func main() {
 		})
 	})
 
+	gormStore := todo.NewGormStore(db)
 
-	handler := todo.NewTodoHandler(db)
+	handler := todo.NewTodoHandler(gormStore)
 	r.POST("/todos", handler.NewTask)
-	r.GET("/todos", handler.List)
-	r.DELETE("/todos/:id", handler.Remove)
+	// r.GET("/todos", handler.List)
+	// r.DELETE("/todos/:id", handler.Remove)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
