@@ -2,19 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"golang.org/x/time/rate"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
@@ -23,10 +17,10 @@ import (
 	"github.com/pallat/todoapi/todo"
 )
 
-var (
-	buildcommit = "dev"
-	buildtime   = time.Now().String()
-)
+// var (
+// 	buildcommit = "dev"
+// 	buildtime   = time.Now().String()
+// )
 
 func main() {
 	err := godotenv.Load("local.env")
@@ -49,18 +43,20 @@ func main() {
 	}
 	collection := client.Database("myapp").Collection("todos")
 
-	r := router.NewMyRouter()
+	r := router.NewFiberRouter()
 
-	r.GET("/healthz", func(c *gin.Context) {
-		c.Status(200)
-	})
-	r.GET("/limitz", limitedHandler)
-	r.GET("/x", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"buildcommit": buildcommit,
-			"buildtime":   buildtime,
-		})
-	})
+	// r := router.NewMyRouter()
+
+	// r.GET("/healthz", func(c *gin.Context) {
+	// 	c.Status(200)
+	// })
+	// r.GET("/limitz", limitedHandler)
+	// r.GET("/x", func(c *gin.Context) {
+	// 	c.JSON(200, gin.H{
+	// 		"buildcommit": buildcommit,
+	// 		"buildtime":   buildtime,
+	// 	})
+	// })
 
 	// gormStore := store.NewGormStore(db)
 	mongoStore := store.NewMongoDBStore(collection)
@@ -70,43 +66,43 @@ func main() {
 	// r.GET("/todos", handler.List)
 	// r.DELETE("/todos/:id", handler.Remove)
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
+	// ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	// defer stop()
 
-	s := &http.Server{
-		Addr:           ":" + os.Getenv("PORT"),
-		Handler:        r,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
-		MaxHeaderBytes: 1 << 20,
+	// s := &http.Server{
+	// 	Addr:           ":" + os.Getenv("PORT"),
+	// 	Handler:        r,
+	// 	ReadTimeout:    10 * time.Second,
+	// 	WriteTimeout:   10 * time.Second,
+	// 	MaxHeaderBytes: 1 << 20,
+	// }
+
+	// go func() {
+	if err := r.Listen(os.Getenv("PORT")); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("listen: %s\n", err)
 	}
+	// }()
 
-	go func() {
-		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
-		}
-	}()
+	// <-ctx.Done()
+	// stop()
+	// fmt.Println("shutting down gracefully, press Ctrl+C again to force")
 
-	<-ctx.Done()
-	stop()
-	fmt.Println("shutting down gracefully, press Ctrl+C again to force")
+	// timeoutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// defer cancel()
 
-	timeoutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := s.Shutdown(timeoutCtx); err != nil {
-		fmt.Println(err)
-	}
+	// if err := s.Shutdown(timeoutCtx); err != nil {
+	// 	fmt.Println(err)
+	// }
 }
 
-var limiter = rate.NewLimiter(5, 5)
+// var limiter = rate.NewLimiter(5, 5)
 
-func limitedHandler(c *gin.Context) {
-	if !limiter.Allow() {
-		c.AbortWithStatus(http.StatusTooManyRequests)
-		return
-	}
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
-}
+// func limitedHandler(c *gin.Context) {
+// 	if !limiter.Allow() {
+// 		c.AbortWithStatus(http.StatusTooManyRequests)
+// 		return
+// 	}
+// 	c.JSON(200, gin.H{
+// 		"message": "pong",
+// 	})
+// }
